@@ -180,8 +180,8 @@ prompt_hg() {
       echo -n $(hg prompt "☿ {rev}@{branch}") $st
     else
       st=""
-      rev=$(hg id -n 2>/dev/null | sed 's/[^-0-9]//g')
-      branch=$(hg id -b 2>/dev/null)
+      rev=$(hg id -i 2>/dev/null | cut -c -6)
+      tag=$(hg id -t 2>/dev/null)
       if `hg st | grep -q "^\?"`; then
         prompt_segment red black
         st='±'
@@ -191,7 +191,7 @@ prompt_hg() {
       else
         prompt_segment green $CURRENT_FG
       fi
-      echo -n "☿ $rev@$branch" $st
+      echo -n "☿ $rev@$tag" $st
     fi
   fi
 }
@@ -244,6 +244,10 @@ build_prompt() {
   prompt_aws
   prompt_context
   prompt_dir
+  DIR=`print -P %~`
+  if [[ ${#DIR} -ge 50 ]]; then
+    echo " %{%k%F{$CURRENT_BG}%}$SEGMENT_SEPARATOR %K{$CURRENT_BG%}"
+  fi
   prompt_git
   prompt_bzr
   prompt_hg
