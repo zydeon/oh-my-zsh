@@ -99,7 +99,7 @@ prompt_end() {
     _end_fg='000'
   fi
   echo ""  # force newline
-  echo "%{%K{$_end_fg}%F{$_end_bg}%}$SEGMENT_SEPARATOR%{%K{$_end_bg}%F{$_end_fg}%}$SEGMENT_SEPARATOR "
+  echo "%{%K{$_end_fg}%F{$_end_bg}%}$SEGMENT_SEPARATOR%{%K{$_end_bg}%F{$_end_fg}%}$SEGMENT_SEPARATOR %{%F{magenta}%}"
   # Other options
   # echo '%{%F{012}%}》'
   # echo "%{%F{012}%}〉"
@@ -248,7 +248,9 @@ prompt_status() {
   [[ $UID -eq 0 ]] && symbols+="%{%F{yellow}%}⚡"
   [[ $(jobs -l | wc -l) -gt 0 ]] && symbols+="%{%F{cyan}%}⚙"
 
-  [[ -n "$symbols" ]] && prompt_segment $(bg_color) $(theme_color) "$symbols"
+  local _status_bg=$(bg_color)
+  local _status_fg='012'
+  [[ -n "$symbols" ]] && prompt_segment $_status_bg $_status_fg "$symbols"
 }
 
 #AWS Profile:
