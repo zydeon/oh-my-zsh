@@ -33,10 +33,10 @@
 ### Segment drawing
 # A few utility functions to make it easy and re-usable to draw segmented prompts
 
-theme_color() {
+bg_color() {
   case ${SOLARIZED_THEME:-dark} in
-      light) echo 'white';;
-      *)     echo 'black';;
+      light) echo '007';;
+      *)     echo '000';;
   esac
 }
 
@@ -92,14 +92,14 @@ prompt_segment() {
 
 # End the prompt, closing any open segments
 prompt_end() {
-  echo ""  # force newline
-  PROMPT_FG='007'
-  PROMPT_BG='015'
+  local _end_bg='015'
+  local _end_fg='007'
   if [[ $SOLARIZED_THEME == 'dark' ]]; then
-    PROMPT_FG='000'
-    PROMPT_BG='008'
+    _end_bg='008'
+    _end_fg='000'
   fi
-  echo "%{%K{$PROMPT_FG}%F{$PROMPT_BG}%}$SEGMENT_SEPARATOR%{%K{$PROMPT_BG}%F{$PROMPT_FG}%}$SEGMENT_SEPARATOR "
+  echo ""  # force newline
+  echo "%{%K{$_end_fg}%F{$_end_bg}%}$SEGMENT_SEPARATOR%{%K{$_end_bg}%F{$_end_fg}%}$SEGMENT_SEPARATOR "
   # Other options
   # echo '%{%F{012}%}》'
   # echo "%{%F{012}%}〉"
@@ -114,7 +114,9 @@ prompt_end() {
 # Context: user@hostname (who am I and where am I)
 prompt_context() {
   if [[ "$USER" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
-    prompt_segment $(theme_color) $(theme_color) "%(!.%{%F{yellow}%}.)%n@%m"
+    local _context_bg=$(bg_color)
+    local _context_fg='012'
+    prompt_segment $_context_bg $_context_fg "%n@%m"
   fi
 }
 
@@ -246,7 +248,7 @@ prompt_status() {
   [[ $UID -eq 0 ]] && symbols+="%{%F{yellow}%}⚡"
   [[ $(jobs -l | wc -l) -gt 0 ]] && symbols+="%{%F{cyan}%}⚙"
 
-  [[ -n "$symbols" ]] && prompt_segment $(theme_color) $(theme_color) "$symbols"
+  [[ -n "$symbols" ]] && prompt_segment $(bg_color) $(theme_color) "$symbols"
 }
 
 #AWS Profile:
