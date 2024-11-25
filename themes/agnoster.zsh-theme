@@ -1,3 +1,4 @@
+# TODO: https://github.com/ryanoasis/powerline-extra-symbols
 # vim:ft=zsh ts=2 sw=2 sts=2
 #
 # agnoster's Theme - https://gist.github.com/3712874
@@ -32,12 +33,20 @@
 ### Segment drawing
 # A few utility functions to make it easy and re-usable to draw segmented prompts
 
-CURRENT_BG='NONE'
+theme_color() {
+  case ${SOLARIZED_THEME:-dark} in
+      light) echo 'white';;
+      *)     echo 'black';;
+  esac
+}
 
 case ${SOLARIZED_THEME:-dark} in
     light) CURRENT_FG='white';;
     *)     CURRENT_FG='black';;
 esac
+
+FIRST_SEGMENT=true
+FIRST_COLOR=''
 
 # Special Powerline characters
 
@@ -54,6 +63,7 @@ esac
   # escape sequence with a single literal character.
   # Do not change this! Do not make it '\u2b80'; that is the old, wrong code point.
   SEGMENT_SEPARATOR=$'\ue0b0'
+  SEGMENT_SEPARATOR_ALT=$'\ue0b1'   #  , other options: 》, 〉, » , › , ❩
 }
 
 # Begin a segment
@@ -61,26 +71,41 @@ esac
 # rendering default background/foreground.
 prompt_segment() {
   local bg fg
-  [[ -n $1 ]] && bg="%K{$1}" || bg="%k"
-  [[ -n $2 ]] && fg="%F{$2}" || fg="%f"
-  if [[ $CURRENT_BG != 'NONE' && $1 != $CURRENT_BG ]]; then
-    echo -n " %{$bg%F{$CURRENT_BG}%}$SEGMENT_SEPARATOR%{$fg%} "
+  [[ -n $1 ]] && bg="$1" || bg="white"
+  [[ -n $2 ]] && fg="$2" || fg="black"
+
+  case ${SOLARIZED_THEME:-dark} in
+      light) GAP_COLOR='015';;
+      *)     GAP_COLOR='008';;
+  esac
+
+  if [[ $FIRST_SEGMENT == 'true' ]]; then
+    echo -n "%{%K{$bg}%F{$GAP_COLOR}%}%{%F{$fg}%} "
+    FIRST_SEGMENT=false
+    FIRST_COLOR=$bg
   else
-    echo -n "%{$bg%}%{$fg%} "
+    echo -n "%{%K{$bg}%F{$GAP_COLOR}%}$SEGMENT_SEPARATOR%{%F{$fg}%} "
   fi
-  CURRENT_BG=$1
   [[ -n $3 ]] && echo -n $3
+  echo -n " %{%K{$GAP_COLOR}%F{$bg}%}$SEGMENT_SEPARATOR"
 }
 
 # End the prompt, closing any open segments
 prompt_end() {
-  if [[ -n $CURRENT_BG ]]; then
-    echo -n " %{%k%F{$CURRENT_BG}%}$SEGMENT_SEPARATOR"
-  else
-    echo -n "%{%k%}"
+  echo ""  # force newline
+  PROMPT_FG='007'
+  PROMPT_BG='015'
+  if [[ $SOLARIZED_THEME == 'dark' ]]; then
+    PROMPT_FG='000'
+    PROMPT_BG='008'
   fi
-  echo -n "%{%f%}"
-  CURRENT_BG=''
+  echo "%{%K{$PROMPT_FG}%F{$PROMPT_BG}%}$SEGMENT_SEPARATOR%{%K{$PROMPT_BG}%F{$PROMPT_FG}%}$SEGMENT_SEPARATOR "
+  # Other options
+  # echo '%{%F{012}%}》'
+  # echo "%{%F{012}%}〉"
+  # echo '%{%F{012}%}»'
+  # echo '%{%F{012}%}›'
+  # echo '%{%F{012}%}❩ '
 }
 
 ### Prompt components
@@ -89,7 +114,7 @@ prompt_end() {
 # Context: user@hostname (who am I and where am I)
 prompt_context() {
   if [[ "$USER" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
-    prompt_segment black default "%(!.%{%F{yellow}%}.)%n@%m"
+    prompt_segment $(theme_color) $(theme_color) "%(!.%{%F{yellow}%}.)%n@%m"
   fi
 }
 
@@ -110,10 +135,10 @@ prompt_git() {
     repo_path=$(git rev-parse --git-dir 2>/dev/null)
     dirty=$(parse_git_dirty)
     ref=$(git symbolic-ref HEAD 2> /dev/null) || ref="➦ $(git rev-parse --short HEAD 2> /dev/null)"
+    segcolor="green"
     if [[ -n $dirty ]]; then
-      prompt_segment yellow $CURRENT_FG
-    else
-      prompt_segment green $CURRENT_FG
+      segcolor="yellow"
+      # prompt_segment yellow $CURRENT_FG
     fi
 
     if [[ -e "${repo_path}/BISECT_LOG" ]]; then
@@ -135,7 +160,8 @@ prompt_git() {
     zstyle ':vcs_info:*' formats ' %u%c'
     zstyle ':vcs_info:*' actionformats ' %u%c'
     vcs_info
-    echo -n "${ref/refs\/heads\//$PL_BRANCH_CHAR }${vcs_info_msg_0_%% }${mode}"
+    # echo -n "${ref/refs\/heads\//$PL_BRANCH_CHAR }${vcs_info_msg_0_%% }${mode}"
+    prompt_segment $segcolor $CURRENT_FG "${ref/refs\/heads\//$PL_BRANCH_CHAR }${vcs_info_msg_0_%% }${mode}"
   fi
 }
 
@@ -220,7 +246,7 @@ prompt_status() {
   [[ $UID -eq 0 ]] && symbols+="%{%F{yellow}%}⚡"
   [[ $(jobs -l | wc -l) -gt 0 ]] && symbols+="%{%F{cyan}%}⚙"
 
-  [[ -n "$symbols" ]] && prompt_segment black default "$symbols"
+  [[ -n "$symbols" ]] && prompt_segment $(theme_color) $(theme_color) "$symbols"
 }
 
 #AWS Profile:
@@ -244,14 +270,10 @@ build_prompt() {
   prompt_aws
   prompt_context
   prompt_dir
-  DIR=`print -P %~`
-  if [[ ${#DIR} -ge 50 ]]; then
-    echo " %{%k%F{$CURRENT_BG}%}$SEGMENT_SEPARATOR %K{$CURRENT_BG%}"
-  fi
   prompt_git
   prompt_bzr
   prompt_hg
   prompt_end
 }
 
-PROMPT='%{%f%b%k%}$(build_prompt) '
+PROMPT='%{%f%b%k%}$(build_prompt)'
